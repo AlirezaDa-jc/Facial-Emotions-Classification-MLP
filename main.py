@@ -9,7 +9,7 @@ import torch.nn as nn
 import config
 from dataset import get_dataloaders
 from model import MLP
-from utils import evaluate_metrics, train_one_epoch, validate
+from utils import evaluate_metrics, set_seed, train_one_epoch, validate
 
 
 def plot_curves(train_losses, val_losses, train_accs, val_accs, exp_name):
@@ -45,12 +45,7 @@ def plot_confusion_matrix(cm, class_names, exp_name):
     os.makedirs(config.PLOTS_DIR, exist_ok=True)
     plt.figure(figsize=(7, 6))
     sns.heatmap(
-        cm,
-        annot=True,
-        fmt="d",
-        cmap="Blues",
-        xticklabels=class_names,
-        yticklabels=class_names,
+        cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_names, yticklabels=class_names
     )
     plt.xlabel("Predicted")
     plt.ylabel("True")
@@ -73,6 +68,9 @@ def run_experiment(config_name):
     print(f"\n===== Running experiment: {config_name} =====")
     print(f"Config: {cfg}")
     print(f"Using device: {config.DEVICE}")
+
+    # Seed everything before data split, model init, and training
+    set_seed(config.SEED)
 
     # Data
     train_loader, val_loader, test_loader, classes = get_dataloaders(cfg["batch_size"])
@@ -114,9 +112,7 @@ def run_experiment(config_name):
 
     # Final Test Evaluation (loss/acc)
     test_loss, test_acc = validate(model, test_loader, criterion, config.DEVICE)
-    print(
-        f"\nFinal Test Evaluation | Test Loss: {test_loss:.4f} | Test Acc: {test_acc:.4f}"
-    )
+    print(f"\nFinal Test Evaluation | Test Loss: {test_loss:.4f} | Test Acc: {test_acc:.4f}")
 
     # Full metrics: precision, recall, F1, confusion matrix
     metrics = evaluate_metrics(model, test_loader, config.DEVICE, class_names=classes)
@@ -147,6 +143,7 @@ def run_experiment(config_name):
         "precision_per_class": metrics["precision_per_class"].tolist(),
         "recall_per_class": metrics["recall_per_class"].tolist(),
         "f1_per_class": metrics["f1_per_class"].tolist(),
+        "support_per_class": metrics["support_per_class"].tolist(),
         "confusion_matrix": metrics["confusion_matrix"].tolist(),
         "class_names": classes,
     }
@@ -159,4 +156,5 @@ def run_experiment(config_name):
 
 
 if __name__ == "__main__":
-    run_experiment("deeper_2layer")
+    for experiment_name in config.CONFIGS:
+        run_experiment(experiment_name)

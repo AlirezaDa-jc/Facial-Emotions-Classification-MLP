@@ -1,9 +1,19 @@
+import random
+
+import numpy as np
 import torch
-from sklearn.metrics import (
-    accuracy_score,
-    confusion_matrix,
-    precision_recall_fscore_support,
-)
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
+
+
+def set_seed(seed):
+    """Seeds Python, NumPy, and PyTorch (CPU + CUDA) for full reproducibility."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    # Makes CUDA convolution/matmul algorithms deterministic (small perf cost).
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device):
